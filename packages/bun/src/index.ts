@@ -10,12 +10,13 @@ export function workflowPlugin(): BunPlugin {
   return {
     name: 'workflow-plugin',
     async setup(build) {
-      // Build workflows on startup
       await new LocalBuilder().build();
 
-      // Client transform plugin
-      build.onLoad({ filter: /\.(ts|tsx|js|jsx)$/ }, async (args) => {
+      // Client transform plugin - only transform TypeScript files
+      // JS files are already built
+      build.onLoad({ filter: /\.(ts|tsx)$/ }, async (args) => {
         const source = await Bun.file(args.path).text();
+
         // Optimization: Skip files that do not have any directives
         if (!source.match(/(use step|use workflow)/)) {
           return { contents: source };
@@ -74,10 +75,9 @@ export class LocalBuilder extends BaseBuilder {
       bundle: false,
     });
 
+    console.log('Created webhook bundle');
+
     // Add .workflows to .gitignore
-    writeFileSync(
-      join(this.config.workingDir, '.workflows', '.gitignore'),
-      '*\n'
-    );
+    writeFileSync(join(this.#outDir, '.gitignore'), '*\n');
   }
 }
